@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ingestor
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: github_ingestor_development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ingestor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    command: bundle exec rails server -b 0.0.0.0
+    environment:
+      DATABASE_URL: postgres://ingestor:password@db/github_ingestor_development
+      RAILS_ENV: development
+      RAILS_LOG_TO_STDOUT: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ingest:
+    build: .
+    command: bundle exec rake github:ingest
+    environment:
+      DATABASE_URL: postgres://ingestor:password@db/github_ingestor_development
+      RAILS_ENV: development
+      RAILS_LOG_TO_STDOUT: "true"
+      # Set CONTINUOUS=true to poll indefinitely instead of running a single cycle
+      CONTINUOUS: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  test:
+    build: .
+    command: bundle exec rspec --format documentation
+    environment:
+      DATABASE_URL: postgres://ingestor:password@db/github_ingestor_test
+      RAILS_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
