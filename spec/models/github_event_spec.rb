@@ -4,8 +4,15 @@ RSpec.describe GithubEvent, type: :model do
   it { should belong_to(:actor).optional }
   it { should belong_to(:repository).optional }
   it { should validate_presence_of(:event_id) }
-  it { should validate_uniqueness_of(:event_id) }
   it { should validate_presence_of(:event_type) }
+
+  it "validates uniqueness of event_id" do
+    create(:github_event, event_id: "evt_1")
+    duplicate = build(:github_event, event_id: "evt_1")
+
+    expect(duplicate).not_to be_valid
+    expect(duplicate.errors[:event_id]).to include("has already been taken")
+  end
 
   describe ".push_events" do
     it "returns only PushEvents" do

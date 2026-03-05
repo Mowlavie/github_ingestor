@@ -45,6 +45,7 @@ RSpec.describe Github::Enricher do
 
   before do
     allow(enricher).to receive(:sleep)
+    allow(client).to receive(:fetch_url)
   end
 
   describe "#enrich_actor" do
@@ -72,9 +73,8 @@ RSpec.describe Github::Enricher do
       let!(:existing) { create(:actor, github_id: 42, login: "octocat", fetched_at: 1.hour.ago) }
 
       it "does not make an API call" do
+        expect(client).not_to receive(:fetch_url)
         enricher.enrich_actor(actor_event_data)
-
-        expect(client).not_to have_received(:fetch_url)
       end
 
       it "returns the existing actor" do
@@ -138,9 +138,8 @@ RSpec.describe Github::Enricher do
       let!(:existing) { create(:repository, github_id: 99, fetched_at: 30.minutes.ago) }
 
       it "does not make an API call" do
+        expect(client).not_to receive(:fetch_url)
         enricher.enrich_repository(repo_event_data)
-
-        expect(client).not_to have_received(:fetch_url)
       end
     end
   end
